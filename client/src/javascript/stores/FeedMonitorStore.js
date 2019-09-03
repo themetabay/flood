@@ -9,10 +9,15 @@ class FeedsStoreClass extends BaseStore {
     super();
     this.feeds = [];
     this.rules = [];
+    this.items = [];
   }
 
   addFeed(feed) {
     SettingsActions.addFeed(feed);
+  }
+
+  modifyFeed(id, feed) {
+    SettingsActions.modifyFeed(id, feed);
   }
 
   addRule(feed) {
@@ -27,8 +32,20 @@ class FeedsStoreClass extends BaseStore {
     SettingsActions.fetchFeeds(query);
   }
 
+  fetchItems(query) {
+    SettingsActions.fetchItems(query);
+  }
+
   fetchRules(query) {
     SettingsActions.fetchRules(query);
+  }
+
+  removeFeed(id) {
+    SettingsActions.removeFeedMonitor(id);
+  }
+
+  removeRule(id) {
+    SettingsActions.removeFeedMonitor(id);
   }
 
   getFeeds() {
@@ -39,6 +56,10 @@ class FeedsStoreClass extends BaseStore {
     return this.rules;
   }
 
+  getItems() {
+    return this.items;
+  }
+
   handleFeedAddError(error) {
     this.emit(EventTypes.SETTINGS_FEED_MONITOR_FEED_ADD_ERROR, error);
   }
@@ -46,6 +67,15 @@ class FeedsStoreClass extends BaseStore {
   handleFeedAddSuccess() {
     this.fetchFeedMonitors();
     this.emit(EventTypes.SETTINGS_FEED_MONITOR_FEED_ADD_SUCCESS);
+  }
+
+  handleFeedModifyError(error) {
+    this.emit(EventTypes.SETTINGS_FEED_MONITOR_FEED_MODIFY_ERROR, error);
+  }
+
+  handleFeedModifySuccess() {
+    this.fetchFeedMonitors();
+    this.emit(EventTypes.SETTINGS_FEED_MONITOR_FEED_MODIFY_SUCCESS);
   }
 
   handleRuleAddError(error) {
@@ -94,12 +124,13 @@ class FeedsStoreClass extends BaseStore {
     this.emit(EventTypes.SETTINGS_FEED_MONITOR_RULES_FETCH_SUCCESS);
   }
 
-  removeFeed(id) {
-    SettingsActions.removeFeedMonitor(id);
+  handleItemsFetchError(error) {
+    this.emit(EventTypes.SETTINGS_FEED_MONITOR_ITEMS_FETCH_ERROR, error);
   }
 
-  removeRule(id) {
-    SettingsActions.removeFeedMonitor(id);
+  handleItemsFetchSuccess(items) {
+    this.items = items;
+    this.emit(EventTypes.SETTINGS_FEED_MONITOR_ITEMS_FETCH_SUCCESS);
   }
 
   setItems(type, items) {
@@ -108,9 +139,7 @@ class FeedsStoreClass extends BaseStore {
       return;
     }
 
-    this[type] = items.sort((a, b) => {
-      return a.label.localeCompare(b.label);
-    });
+    this[type] = items.sort((a, b) => a.label.localeCompare(b.label));
   }
 
   setFeeds(feeds) {
@@ -122,7 +151,7 @@ class FeedsStoreClass extends BaseStore {
   }
 }
 
-let FeedsStore = new FeedsStoreClass();
+const FeedsStore = new FeedsStoreClass();
 
 FeedsStore.dispatcherID = AppDispatcher.register(payload => {
   const {action} = payload;
@@ -133,6 +162,12 @@ FeedsStore.dispatcherID = AppDispatcher.register(payload => {
       break;
     case ActionTypes.SETTINGS_FEED_MONITOR_FEED_ADD_SUCCESS:
       FeedsStore.handleFeedAddSuccess();
+      break;
+    case ActionTypes.SETTINGS_FEED_MONITOR_FEED_MODIFY_ERROR:
+      FeedsStore.handleFeedModifyError(action.error);
+      break;
+    case ActionTypes.SETTINGS_FEED_MONITOR_FEED_MODIFY_SUCCESS:
+      FeedsStore.handleFeedModifySuccess();
       break;
     case ActionTypes.SETTINGS_FEED_MONITOR_RULE_ADD_ERROR:
       FeedsStore.handleRuleAddError(action.error);
@@ -163,6 +198,12 @@ FeedsStore.dispatcherID = AppDispatcher.register(payload => {
       break;
     case ActionTypes.SETTINGS_FEED_MONITORS_FETCH_SUCCESS:
       FeedsStore.handleFeedMonitorsFetchSuccess(action.data);
+      break;
+    case ActionTypes.SETTINGS_FEED_MONITOR_ITEMS_FETCH_ERROR:
+      FeedsStore.handleItemsFetchError(action.error);
+      break;
+    case ActionTypes.SETTINGS_FEED_MONITOR_ITEMS_FETCH_SUCCESS:
+      FeedsStore.handleItemsFetchSuccess(action.data);
       break;
     default:
       break;

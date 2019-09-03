@@ -1,4 +1,9 @@
 export default {
+  'actionbar.button.start.torrent': 'Start Torrent',
+  'actionbar.button.stop.torrent': 'Stop Torrent',
+  'actionbar.button.add.torrent': 'Add Torrent',
+  'actionbar.button.remove.torrent': 'Remove Torrent',
+
   'alert.torrent.add': `Successfully added {countElement} {count, plural,
       =1 {torrent}
       other {torrents}
@@ -26,6 +31,9 @@ export default {
   'alert.settings.saved': 'Successfully saved settings.',
 
   'auth.add.user': 'Add User',
+  'auth.connectionType': 'rTorrent Connection Type',
+  'auth.connectionType.tcp': 'TCP',
+  'auth.connectionType.socket': 'Unix Socket',
   'auth.create.account': 'Create Account',
   'auth.create.an.account': 'Create an account',
   'auth.create.an.account.intro': 'Welcome to Flood!',
@@ -38,11 +46,16 @@ export default {
   'auth.username': 'Username',
   'auth.admin': 'Admin',
   'auth.message.not.admin': 'User is not Admin',
+  'auth.rtorrentHost': 'rTorrent Host',
+  'auth.rtorrentPort': 'rTorrent Port',
+  'auth.rtorrentSocket': 'rTorrent Socket',
+  'auth.rtorrentSocketPath': 'rTorrent Socket Path',
 
   'button.add': 'Add',
   'button.cancel': 'Cancel',
   'button.no': 'No',
   'button.save': 'Save Settings',
+  'button.save.feed': 'Save',
   'button.test': 'Test',
   'button.state.adding': 'Adding...',
   'button.yes': 'Yes',
@@ -58,7 +71,7 @@ export default {
   'feeds.existing.feeds': 'Existing Feeds',
   'feeds.existing.rules': 'Existing Rules',
   'feeds.label': 'Label',
-  'feeds.match.count': `{count, plural, =1 {# match} other {# matches}}`,
+  'feeds.match.count': '{count, plural, =1 {# match} other {# matches}}',
   'feeds.match.pattern': 'Match Pattern',
   'feeds.match': 'Match',
   'feeds.exclude': 'Exclude',
@@ -73,10 +86,12 @@ export default {
   'feeds.tabs.feeds': 'Feeds',
   'feeds.tabs.heading': 'Torrent Feeds',
   'feeds.tags': 'Tags',
-  'feeds.time.hr': '{durationValue} hr',
-  'feeds.time.min': '{durationValue} min',
+  'feeds.time.hr': 'Hours',
+  'feeds.time.min': 'Minutes',
+  'feeds.time.day': 'Days',
   'feeds.torrent.destination': 'Torrent Destination',
   'feeds.url': 'URL',
+  'feeds.search': 'Search term',
   'feeds.validation.invalid.regular.expression': 'Invalid regular expression.',
   'feeds.validation.must.select.feed': 'You must select a feed.',
   'feeds.validation.must.specify.destination': 'You must specify a destination.',
@@ -109,7 +124,9 @@ export default {
 
   'locale.language.en': 'English',
   'locale.language.fr': 'French',
+  'locale.language.ko': 'Korean',
   'locale.language.nl': 'Nederlands',
+  'locale.language.zh': 'Chinese',
 
   'mediainfo.execError':
     'An error occurred while running mediainfo on the server. Check that mediainfo is installed and available in the PATH to Flood.',
@@ -171,6 +188,7 @@ export default {
   'settings.tabs.resources': 'Resources',
   'settings.tabs.authentication': 'Authentication',
   'settings.tabs.userinterface': 'User Interface',
+  'settings.tabs.about': 'About',
 
   'settings.ui.locale': 'Locale',
   'settings.ui.language': 'Language',
@@ -178,7 +196,10 @@ export default {
   'settings.ui.torrent.size': 'Torrent Size',
   'settings.ui.torrent.size.expanded': 'Expanded View',
   'settings.ui.torrent.size.condensed': 'Condensed View',
+  'settings.ui.torrent.details.enabled': 'Enabled',
   'settings.ui.torrent.details.tags.placement': 'In the expanded view, tags work best at the end of the list.',
+
+  'settings.about.flood': 'About Flood',
 
   'sidebar.button.feeds': 'Feeds',
   'sidebar.button.notifications': 'Notifications',
@@ -226,6 +247,7 @@ export default {
   'torrents.details.actions.stop': 'Stop',
   'torrents.details.details': 'Details',
   'torrents.details.files': 'Files',
+  'torrents.details.files.loading': 'Loading file detail...',
   'torrents.details.files.download.file': `{count, plural,
     =1 {Download File}
     other {Download Files}
@@ -323,7 +345,7 @@ export default {
   'torrents.sort.title': 'Sort By',
 
   'connection-interruption.heading': 'Cannot connect to rTorrent',
-  'connection-interruption.verify-settings-prompt': `Let's verify your connection settings.`,
-  'connection-interruption.verification-error': `Connection could not be verified.`,
-  'connection-interruption.verification-success': `Connection successful`,
+  'connection-interruption.verify-settings-prompt': "Let's verify your connection settings.",
+  'connection-interruption.verification-error': 'Connection could not be verified.',
+  'connection-interruption.verification-success': 'Connection successful',
 };

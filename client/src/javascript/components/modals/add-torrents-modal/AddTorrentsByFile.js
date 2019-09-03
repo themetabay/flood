@@ -12,36 +12,32 @@ import TorrentActions from '../../../actions/TorrentActions';
 import TorrentDestination from '../../general/filesystem/TorrentDestination';
 
 class AddTorrentsByFile extends React.Component {
-  _formData = {};
-  _formRef = null;
-
   state = {
     errors: {},
     isAddingTorrents: false,
     files: [],
     tags: '',
-    startTorrents: SettingsStore.getFloodSettings('startTorrentsOnLoad'),
   };
+
+  formRef = null;
 
   getFileDropzone() {
     let fileContent = null;
 
     if (this.state.files.length > 0) {
-      const files = this.state.files.map((file, index) => {
-        return (
-          <li className="dropzone__selected-files__file interactive-list__item" key={index} title={file.name}>
-            <span className="interactive-list__icon">
-              <File />
-            </span>
-            <span className="interactive-list__label">{file.name}</span>
-            <span
-              className="interactive-list__icon interactive-list__icon--action interactive-list__icon--action--warning"
-              onClick={() => this.handleFileRemove(index)}>
-              <Close />
-            </span>
-          </li>
-        );
-      });
+      const files = this.state.files.map((file, index) => (
+        <li className="dropzone__selected-files__file interactive-list__item" key={file.name} title={file.name}>
+          <span className="interactive-list__icon">
+            <File />
+          </span>
+          <span className="interactive-list__label">{file.name}</span>
+          <span
+            className="interactive-list__icon interactive-list__icon--action interactive-list__icon--action--warning"
+            onClick={() => this.handleFileRemove(index)}>
+            <Close />
+          </span>
+        </li>
+      ));
 
       fileContent = (
         <ul className="dropzone__selected-files interactive-list" onClick={this.handleFilesClick}>
@@ -59,7 +55,6 @@ class AddTorrentsByFile extends React.Component {
         <Dropzone
           activeClassName="dropzone--is-dragging"
           className="form__dropzone dropzone interactive-list"
-          ref="dropzone"
           onDrop={this.handleFileDrop}
           disablePreview>
           <div className="dropzone__copy">
@@ -84,9 +79,7 @@ class AddTorrentsByFile extends React.Component {
       delete nextErrorsState.files;
     }
 
-    this.setState(state => {
-      return {errors: nextErrorsState, files: state.files.concat(files)};
-    });
+    this.setState(state => ({errors: nextErrorsState, files: state.files.concat(files)}));
   };
 
   handleFileRemove = fileIndex => {
@@ -100,7 +93,7 @@ class AddTorrentsByFile extends React.Component {
   }
 
   handleAddTorrents = () => {
-    const formData = this._formRef.getFormData();
+    const formData = this.formRef.getFormData();
     this.setState({isAddingTorrents: true});
 
     const fileData = new FormData();
@@ -122,13 +115,13 @@ class AddTorrentsByFile extends React.Component {
     SettingsStore.updateOptimisticallyOnly({id: 'startTorrentsOnLoad', data: start});
   };
 
-  handleFormChange = ({event, formData}) => {
-    this._formData = formData;
-  };
-
   render() {
     return (
-      <Form className="inverse" onChange={this.handleFormChange} ref={ref => (this._formRef = ref)}>
+      <Form
+        className="inverse"
+        ref={ref => {
+          this.formRef = ref;
+        }}>
         <FormRow>{this.getFileDropzone()}</FormRow>
         <TorrentDestination
           id="destination"

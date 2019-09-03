@@ -5,15 +5,91 @@ const config = require('../../config');
 const formatUtil = require('../../shared/util/formatUtil');
 const methodCallUtil = require('../util/methodCallUtil');
 const serverEventTypes = require('../../shared/constants/serverEventTypes');
+const truncateTo = require('../util/numberUtils');
 const torrentListPropMap = require('../constants/torrentListPropMap');
 const torrentServiceEvents = require('../constants/torrentServiceEvents');
 const torrentStatusMap = require('../../shared/constants/torrentStatusMap');
 
 const torrentListMethodCallConfig = methodCallUtil.getMethodCallConfigFromPropMap(torrentListPropMap);
 
+const getTorrentETAFromDetails = torrentDetails => {
+  const {downRate, bytesDone, sizeBytes} = torrentDetails;
+
+  if (downRate > 0) {
+    return formatUtil.secondsToDuration((sizeBytes - bytesDone) / downRate);
+  }
+
+  return Infinity;
+};
+
+const getTorrentPercentCompleteFromDetails = torrentDetails => {
+  const percentComplete = (torrentDetails.bytesDone / torrentDetails.sizeBytes) * 100;
+
+  if (percentComplete > 0 && percentComplete < 10) {
+    return Number(truncateTo(percentComplete, 2));
+  }
+  if (percentComplete > 10 && percentComplete < 100) {
+    return Number(truncateTo(percentComplete, 1));
+  }
+
+  return percentComplete;
+};
+
+const getTorrentStatusFromDetails = torrentDetails => {
+  const {isHashChecking, isComplete, isOpen, upRate, downRate, state, message} = torrentDetails;
+
+  const torrentStatus = [];
+
+  if (isHashChecking) {
+    torrentStatus.push(torrentStatusMap.checking);
+  } else if (isComplete && isOpen && state === '1') {
+    torrentStatus.push(torrentStatusMap.complete);
+    torrentStatus.push(torrentStatusMap.seeding);
+  } else if (isComplete && isOpen && state === '0') {
+    torrentStatus.push(torrentStatusMap.stopped);
+  } else if (isComplete && !isOpen) {
+    torrentStatus.push(torrentStatusMap.stopped);
+    torrentStatus.push(torrentStatusMap.complete);
+  } else if (!isComplete && isOpen && state === '1') {
+    torrentStatus.push(torrentStatusMap.downloading);
+  } else if (!isComplete && isOpen && state === '0') {
+    torrentStatus.push(torrentStatusMap.stopped);
+  } else if (!isComplete && !isOpen) {
+    torrentStatus.push(torrentStatusMap.stopped);
+  }
+
+  if (message.length) {
+    torrentStatus.push(torrentStatusMap.error);
+  }
+
+  if (upRate !== 0) {
+    torrentStatus.push(torrentStatusMap.activelyUploading);
+  }
+
+  if (downRate !== 0) {
+    torrentStatus.push(torrentStatusMap.activelyDownloading);
+  }
+
+  if (upRate !== 0 || downRate !== 0) {
+    torrentStatus.push(torrentStatusMap.active);
+  } else {
+    torrentStatus.push(torrentStatusMap.inactive);
+  }
+
+  return torrentStatus;
+};
+
+const hasTorrentFinished = (prevData = {}, nextData = {}) => {
+  const {status = []} = prevData;
+
+  return (
+    !status.includes(torrentStatusMap.checking) && prevData.percentComplete < 100 && nextData.percentComplete === 100
+  );
+};
+
 class TorrentService extends BaseService {
-  constructor() {
-    super(...arguments);
+  constructor(...serviceConfig) {
+    super(...serviceConfig);
 
     this.errorCount = 0;
     this.pollTimeout = null;
@@ -25,21 +101,21 @@ class TorrentService extends BaseService {
     this.handleFetchTorrentListSuccess = this.handleFetchTorrentListSuccess.bind(this);
     this.handleFetchTorrentListError = this.handleFetchTorrentListError.bind(this);
 
-    const clientGatewayService = this.services.clientGatewayService;
+    const {clientGatewayService} = this.services;
 
     clientGatewayService.addTorrentListReducer({
       key: 'status',
-      reduce: this.getTorrentStatusFromDetails,
+      reduce: getTorrentStatusFromDetails,
     });
 
     clientGatewayService.addTorrentListReducer({
       key: 'percentComplete',
-      reduce: this.getTorrentPercentCompleteFromDetails,
+      reduce: getTorrentPercentCompleteFromDetails,
     });
 
     clientGatewayService.addTorrentListReducer({
       key: 'eta',
-      reduce: this.getTorrentETAFromDetails,
+      reduce: getTorrentETAFromDetails,
     });
 
     clientGatewayService.on(clientGatewayServiceEvents.PROCESS_TORRENT, this.handleTorrentProcessed);
@@ -102,72 +178,6 @@ class TorrentService extends BaseService {
       .catch(this.handleFetchTorrentListError);
   }
 
-  getTorrentETAFromDetails(torrentDetails) {
-    const {downRate, bytesDone, sizeBytes} = torrentDetails;
-
-    if (downRate > 0) {
-      return formatUtil.secondsToDuration((sizeBytes - bytesDone) / downRate);
-    }
-
-    return Infinity;
-  }
-
-  getTorrentPercentCompleteFromDetails(torrentDetails) {
-    const percentComplete = (torrentDetails.bytesDone / torrentDetails.sizeBytes) * 100;
-
-    if (percentComplete > 0 && percentComplete < 10) {
-      return Number(percentComplete.toFixed(2));
-    } else if (percentComplete > 10 && percentComplete < 100) {
-      return Number(percentComplete.toFixed(1));
-    }
-
-    return percentComplete;
-  }
-
-  getTorrentStatusFromDetails(torrentDetails) {
-    const {isHashChecking, isComplete, isOpen, upRate, downRate, state, message} = torrentDetails;
-
-    const torrentStatus = [];
-
-    if (isHashChecking) {
-      torrentStatus.push(torrentStatusMap.checking);
-    } else if (isComplete && isOpen && state === '1') {
-      torrentStatus.push(torrentStatusMap.complete);
-      torrentStatus.push(torrentStatusMap.seeding);
-    } else if (isComplete && isOpen && state === '0') {
-      torrentStatus.push(torrentStatusMap.stopped);
-    } else if (isComplete && !isOpen) {
-      torrentStatus.push(torrentStatusMap.stopped);
-      torrentStatus.push(torrentStatusMap.complete);
-    } else if (!isComplete && isOpen && state === '1') {
-      torrentStatus.push(torrentStatusMap.downloading);
-    } else if (!isComplete && isOpen && state === '0') {
-      torrentStatus.push(torrentStatusMap.stopped);
-    } else if (!isComplete && !isOpen) {
-      torrentStatus.push(torrentStatusMap.stopped);
-    }
-
-    if (message.length) {
-      torrentStatus.push(torrentStatusMap.error);
-    }
-
-    if (upRate !== 0) {
-      torrentStatus.push(torrentStatusMap.activelyUploading);
-    }
-
-    if (downRate !== 0) {
-      torrentStatus.push(torrentStatusMap.activelyDownloading);
-    }
-
-    if (upRate !== 0 || downRate !== 0) {
-      torrentStatus.push(torrentStatusMap.active);
-    } else {
-      torrentStatus.push(torrentStatusMap.inactive);
-    }
-
-    return torrentStatus;
-  }
-
   getTorrent(hash) {
     return this.torrentListSummary.torrents[hash];
   }
@@ -228,7 +238,7 @@ class TorrentService extends BaseService {
     // If more than consecutive errors have occurred, then we delay the next
     // request.
     if (++this.errorCount >= 3) {
-      nextInterval = Math.max(nextInterval + (this.errorCount * nextInterval) / 4, 1000 * 60);
+      nextInterval = Math.min(nextInterval + 2 ** this.errorCount, 1000 * 60);
     }
 
     this.deferFetchTorrentList(nextInterval);
@@ -257,20 +267,12 @@ class TorrentService extends BaseService {
   handleTorrentProcessed(nextTorrentDetails) {
     const prevTorrentDetails = this.torrentListSummary.torrents[nextTorrentDetails.hash];
 
-    if (this.hasTorrentFinished(prevTorrentDetails, nextTorrentDetails)) {
+    if (hasTorrentFinished(prevTorrentDetails, nextTorrentDetails)) {
       this.services.notificationService.addNotification({
         id: 'notification.torrent.finished',
         data: {name: nextTorrentDetails.name},
       });
     }
-  }
-
-  hasTorrentFinished(prevData = {}, nextData = {}) {
-    const {status = []} = prevData;
-
-    return (
-      !status.includes(torrentStatusMap.checking) && prevData.percentComplete < 100 && nextData.percentComplete === 100
-    );
   }
 
   handleTorrentsRemoved() {

@@ -14,6 +14,7 @@ export default {
   'button.add': 'Toevoegen',
   'button.cancel': 'Annuleren',
   'button.no': 'Nee',
+  'button.save.feed': 'Opslaan',
   'button.save': 'Instellingen opslaan',
   'button.state.adding': 'Toevoegen...',
   'button.yes': 'Ja',
@@ -26,7 +27,7 @@ export default {
   'feeds.existing.feeds': 'Feeds',
   'feeds.existing.rules': 'Regels',
   'feeds.label': 'Label',
-  'feeds.match.count': `{count, plural, =1 {# match} other {# matches}}`,
+  'feeds.match.count': '{count, plural, =1 {# match} other {# matches}}',
   'feeds.match.pattern': 'Match op patroon',
   'feeds.match': 'Match',
   'feeds.no.feeds.available': 'Geen feeds beschikbaar.',
@@ -63,6 +64,7 @@ export default {
 
   'locale.language.en': 'English',
   'locale.language.fr': 'Frans',
+  'locale.language.ko': 'Koreaans',
   'locale.language.nl': 'Nederlands',
 
   'alert.torrent.add': `Het toevoegen van {countElement} {count, plural,

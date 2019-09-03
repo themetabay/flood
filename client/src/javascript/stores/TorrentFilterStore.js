@@ -5,6 +5,8 @@ import AppDispatcher from '../dispatcher/AppDispatcher';
 import BaseStore from './BaseStore';
 import EventTypes from '../constants/EventTypes';
 import SettingsStore from './SettingsStore';
+// TODO: Fix this circular dependency
+// eslint-disable-next-line
 import TorrentStore from './TorrentStore';
 
 class TorrentFilterStoreClass extends BaseStore {
@@ -25,6 +27,7 @@ class TorrentFilterStoreClass extends BaseStore {
     this.tagFilter = 'all';
     this.trackerFilter = 'all';
     TorrentStore.triggerTorrentsFilter();
+    this.emit(EventTypes.UI_TORRENTS_FILTER_CLEAR);
     this.emit(EventTypes.UI_TORRENTS_FILTER_SEARCH_CHANGE);
     this.emit(EventTypes.UI_TORRENTS_FILTER_STATUS_CHANGE);
     this.emit(EventTypes.UI_TORRENTS_FILTER_TRACKER_CHANGE);
@@ -52,29 +55,19 @@ class TorrentFilterStoreClass extends BaseStore {
   }
 
   getTorrentStatusCount() {
-    return this.taxonomy.statusCounts;
+    return this.taxonomy.statusCounts || {};
   }
 
   getTorrentTagCount() {
-    return this.taxonomy.tagCounts;
+    return this.taxonomy.tagCounts || {};
   }
 
   getTorrentTrackerCount() {
-    return this.taxonomy.trackerCounts;
+    return this.taxonomy.trackerCounts || {};
   }
 
   handleFetchSettingsRequest() {
     this.setTorrentsSort(SettingsStore.getFloodSettings('sortTorrents'));
-  }
-
-  handleTorrentTaxonomyRequestSuccess(taxonomy) {
-    this.taxonomy = taxonomy;
-
-    if (this.tagFilter !== 'all' && !Object.keys(taxonomy.tags).includes(this.tagFilter)) {
-      this.setTagFilter('all');
-    }
-
-    this.emit(EventTypes.CLIENT_FETCH_TORRENT_TAXONOMY_SUCCESS);
   }
 
   handleTorrentTaxonomyDiffChange(diff) {
@@ -159,7 +152,7 @@ class TorrentFilterStoreClass extends BaseStore {
   }
 }
 
-let TorrentFilterStore = new TorrentFilterStoreClass();
+const TorrentFilterStore = new TorrentFilterStoreClass();
 
 TorrentFilterStore.dispatcherID = AppDispatcher.register(payload => {
   const {action} = payload;

@@ -2,7 +2,6 @@ import {Form} from 'flood-ui-kit';
 import {injectIntl} from 'react-intl';
 import React from 'react';
 
-import EventTypes from '../../../constants/EventTypes';
 import Modal from '../Modal';
 import ModalActions from '../ModalActions';
 import TorrentActions from '../../../actions/TorrentActions';
@@ -11,10 +10,7 @@ import TorrentStore from '../../../stores/TorrentStore';
 
 class MoveTorrents extends React.Component {
   state = {
-    moveTorrentsError: null,
-    isExpanded: false,
     isSettingDownloadPath: false,
-    moveTorrents: false,
     originalSource: null,
   };
 
@@ -27,18 +23,6 @@ class MoveTorrents extends React.Component {
       this.setState({originalSource});
     }
   }
-
-  componentDidMount() {
-    TorrentStore.listen(EventTypes.CLIENT_MOVE_TORRENTS_REQUEST_ERROR, this.onMoveError);
-  }
-
-  componentWillUnmount() {
-    TorrentStore.unlisten(EventTypes.CLIENT_MOVE_TORRENTS_REQUEST_ERROR, this.onMoveError);
-  }
-
-  onMoveError = () => {
-    this.setState({isSettingDownloadPath: false});
-  };
 
   getActions() {
     return [
@@ -84,16 +68,18 @@ class MoveTorrents extends React.Component {
 
   handleFormSubmit = ({formData}) => {
     const filenames = TorrentStore.getSelectedTorrentsFilename();
-    const sources = TorrentStore.getSelectedTorrentsDownloadLocations();
+    const sourcePaths = TorrentStore.getSelectedTorrentsDownloadLocations();
 
-    if (sources.length) {
+    if (sourcePaths.length) {
       this.setState({isSettingDownloadPath: true});
       TorrentActions.moveTorrents(TorrentStore.getSelectedTorrents(), {
         destination: formData.destination,
         isBasePath: formData.useBasePath,
         filenames,
         moveFiles: formData.moveFiles,
-        sources,
+        sourcePaths,
+      }).then(() => {
+        this.setState({isSettingDownloadPath: false});
       });
     }
   };

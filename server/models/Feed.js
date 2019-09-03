@@ -1,4 +1,4 @@
-let FeedSub = require('feedsub');
+const FeedSub = require('feedsub');
 
 class Feed {
   constructor(options) {
@@ -10,6 +10,22 @@ class Feed {
       console.error('Feed URL must be defined.');
       return null;
     }
+
+    this.reader = new FeedSub(options.url, {
+      autoStart: true,
+      emitOnStart: true,
+      maxHistory: this.options.maxItemHistory,
+      interval: options.interval ? Number(options.interval) : 15,
+      forceInterval: true,
+      readEveryItem: true,
+    });
+
+    this.initReader();
+  }
+
+  modify(options) {
+    Object.assign(this.options, options);
+    this.items = [];
 
     this.reader = new FeedSub(options.url, {
       autoStart: true,
@@ -36,7 +52,10 @@ class Feed {
 
     this.items = this.items.concat(items);
 
-    this.options.onNewItems({feed: this.options, items});
+    this.options.onNewItems({
+      feed: this.options,
+      items,
+    });
   }
 
   initReader() {

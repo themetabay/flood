@@ -14,6 +14,7 @@ export default {
   'button.add': 'Ajouter',
   'button.cancel': 'Annuler',
   'button.no': 'Non',
+  'button.save.feed': 'Enregistrer',
   'button.save': 'Enregistrer',
   'button.state.adding': 'Ajout...',
   'button.yes': 'Oui',
@@ -26,7 +27,7 @@ export default {
   'feeds.existing.feeds': 'Flux Existants',
   'feeds.existing.rules': 'Règles Existantes',
   'feeds.label': 'Label',
-  'feeds.match.count': `{count, plural, =1 {# correspond} other {# correspondent}}`,
+  'feeds.match.count': '{count, plural, =1 {# correspond} other {# correspondent}}',
   'feeds.match.pattern': 'Motif Correspondant',
   'feeds.match': 'Correspondance',
   'feeds.no.feeds.available': 'Aucun flux disponible.',
@@ -63,6 +64,7 @@ export default {
 
   'locale.language.en': 'Anglais',
   'locale.language.fr': 'Français',
+  'locale.language.ko': 'Coréen',
   'locale.language.nl': 'Néerlandais',
 
   'alert.torrent.add': `L'ajout de {countElement} {count, plural,

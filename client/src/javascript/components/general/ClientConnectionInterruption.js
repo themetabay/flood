@@ -16,10 +16,12 @@ import AuthActions from '../../actions/AuthActions';
 import AuthStore from '../../stores/AuthStore';
 import Checkmark from '../icons/Checkmark';
 import ClientActions from '../../actions/ClientActions';
+import connectStores from '../../util/connectStores';
+import EventTypes from '../../constants/EventTypes';
 import FloodActions from '../../actions/FloodActions';
 import RtorrentConnectionTypeSelection from './RtorrentConnectionTypeSelection';
 
-export default class ClientConnectionInterruption extends React.Component {
+class ClientConnectionInterruption extends React.Component {
   state = {
     hasTestedConnection: false,
     isConnectionVerified: false,
@@ -36,19 +38,11 @@ export default class ClientConnectionInterruption extends React.Component {
   };
 
   handleFormSubmit = ({formData}) => {
-    this.setState({
-      isSavingSettings: true,
-    });
-
     AuthActions.updateUser(AuthStore.getCurrentUsername(), formData)
       .then(() => {
         FloodActions.restartActivityStream();
       })
-      .catch(error => {
-        this.setState({
-          isSavingSettings: false,
-        });
-      });
+      .catch(() => {});
   };
 
   handleTestButtonClick = () => {
@@ -75,7 +69,7 @@ export default class ClientConnectionInterruption extends React.Component {
               isTestingConnection: false,
             });
           });
-      }
+      },
     );
   };
 
@@ -109,11 +103,37 @@ export default class ClientConnectionInterruption extends React.Component {
   }
 
   render() {
+    const {isAdmin, isInitialUser} = this.props;
     const {isConnectionVerified, isTestingConnection} = this.state;
+
+    if (!isAdmin && !isInitialUser) {
+      return (
+        <Panel spacing="large">
+          <PanelHeader>
+            <h1>
+              <FormattedMessage id="connection-interruption.heading" defaultMessage="Cannot connect to rTorrent" />
+            </h1>
+          </PanelHeader>
+          <PanelContent>
+            <p className="copy--lead">
+              <FormattedMessage
+                id="connection-interruption.verify-settings-not-admin"
+                defaultMessage="Please contact your Flood administator to fix the issue."
+              />
+            </p>
+          </PanelContent>
+        </Panel>
+      );
+    }
 
     return (
       <Panel spacing="large">
-        <Form onChange={this.handleFormChange} onSubmit={this.handleFormSubmit} ref={ref => (this.formRef = ref)}>
+        <Form
+          onChange={this.handleFormChange}
+          onSubmit={this.handleFormSubmit}
+          ref={ref => {
+            this.formRef = ref;
+          }}>
           <PanelHeader>
             <h1>
               <FormattedMessage id="connection-interruption.heading" defaultMessage="Cannot connect to rTorrent" />
@@ -145,3 +165,25 @@ export default class ClientConnectionInterruption extends React.Component {
     );
   }
 }
+
+const ConnectedClientConnectionInterruption = connectStores(ClientConnectionInterruption, () => {
+  return [
+    {
+      store: AuthStore,
+      event: [
+        EventTypes.AUTH_LOGIN_SUCCESS,
+        EventTypes.AUTH_REGISTER_SUCCESS,
+        EventTypes.AUTH_VERIFY_SUCCESS,
+        EventTypes.AUTH_VERIFY_ERROR,
+      ],
+      getValue: ({store}) => {
+        return {
+          isAdmin: store.isAdmin(),
+          isInitialUser: store.getIsInitialUser(),
+        };
+      },
+    },
+  ];
+});
+
+export default ConnectedClientConnectionInterruption;

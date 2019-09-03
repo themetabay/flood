@@ -5,7 +5,7 @@ import {compute, getTranslationString} from '../../util/size';
 
 class Size extends React.Component {
   renderNumber(computedNumber) {
-    if (isNaN(computedNumber.value)) {
+    if (Number.isNaN(computedNumber.value)) {
       return '—';
     }
 
@@ -13,7 +13,7 @@ class Size extends React.Component {
   }
 
   render() {
-    const {value, isSpeed, precision, intl} = this.props;
+    const {value, isSpeed, className, precision, intl} = this.props;
     const computed = compute(value, precision);
 
     let translatedUnit = intl.formatMessage({id: getTranslationString(computed.unit)});
@@ -26,12 +26,12 @@ class Size extends React.Component {
         },
         {
           baseUnit: translatedUnit,
-        }
+        },
       );
     }
 
     return (
-      <span>
+      <span className={className}>
         {this.renderNumber(computed)}
         <em className="unit">{translatedUnit}</em>
       </span>

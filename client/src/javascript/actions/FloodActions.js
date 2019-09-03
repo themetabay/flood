@@ -9,31 +9,12 @@ import ConfigStore from '../stores/ConfigStore';
 const baseURI = ConfigStore.getBaseURI();
 
 let activityStreamEventSource = null;
-let lastActivityStreamOptions = undefined;
+let lastActivityStreamOptions;
 let visibilityChangeTimeout = null;
 
-const handleProlongedInactivity = () => {
-  FloodActions.closeActivityStream();
-};
-
-const handleWindowVisibilityChange = () => {
-  if (global.document.hidden) {
-    // After 30 seconds of inactivity, we stop the event stream.
-    visibilityChangeTimeout = global.setTimeout(handleProlongedInactivity, 1000 * 30);
-  } else {
-    global.clearTimeout(visibilityChangeTimeout);
-
-    if (activityStreamEventSource == null) {
-      FloodActions.startActivityStream(lastActivityStreamOptions);
-    }
-  }
-};
-
-global.document.addEventListener('visibilitychange', handleWindowVisibilityChange);
-
 const FloodActions = {
-  clearNotifications: options => {
-    return axios
+  clearNotifications: options =>
+    axios
       .delete(`${baseURI}api/notifications`)
       .then((json = {}) => json.data)
       .then(
@@ -53,21 +34,22 @@ const FloodActions = {
               error,
             },
           });
-        }
-      );
-  },
+        },
+      ),
 
   closeActivityStream() {
     activityStreamEventSource.close();
 
     activityStreamEventSource.removeEventListener(
       serverEventTypes.CLIENT_CONNECTIVITY_STATUS_CHANGE,
-      this.handleClientConnectivityStatusChange
+      this.handleClientConnectivityStatusChange,
     );
+
+    activityStreamEventSource.removeEventListener(serverEventTypes.DISK_USAGE_CHANGE, this.handleDiskUsageChange);
 
     activityStreamEventSource.removeEventListener(
       serverEventTypes.NOTIFICATION_COUNT_CHANGE,
-      this.handleNotificationCountChange
+      this.handleNotificationCountChange,
     );
 
     activityStreamEventSource.removeEventListener(serverEventTypes.TAXONOMY_DIFF_CHANGE, this.handleTaxonomyDiffChange);
@@ -76,88 +58,65 @@ const FloodActions = {
 
     activityStreamEventSource.removeEventListener(
       serverEventTypes.TORRENT_LIST_DIFF_CHANGE,
-      this.handleTorrentListDiffChange
+      this.handleTorrentListDiffChange,
     );
 
     activityStreamEventSource.removeEventListener(
       serverEventTypes.TORRENT_LIST_FULL_UPDATE,
-      this.handleTorrentListFullUpdate
+      this.handleTorrentListFullUpdate,
     );
 
     activityStreamEventSource.removeEventListener(
       serverEventTypes.TRANSFER_SUMMARY_DIFF_CHANGE,
-      this.handleTransferSummaryDiffChange
+      this.handleTransferSummaryDiffChange,
     );
 
     activityStreamEventSource.removeEventListener(
       serverEventTypes.TRANSFER_SUMMARY_FULL_UPDATE,
-      this.handleTransferSummaryFullUpdate
+      this.handleTransferSummaryFullUpdate,
     );
 
     activityStreamEventSource.removeEventListener(
       serverEventTypes.TRANSFER_HISTORY_FULL_UPDATE,
-      this.handleTransferHistoryFullUpdate
+      this.handleTransferHistoryFullUpdate,
     );
 
     activityStreamEventSource = null;
   },
 
-  fetchDirectoryList: (options = {}) => {
-    return axios
+  fetchDirectoryList: (options = {}) =>
+    axios
       .get(`${baseURI}api/directory-list`, {
         params: options,
       })
       .then((json = {}) => json.data)
-      .then(
-        response => {
-          AppDispatcher.dispatchServerAction({
-            type: ActionTypes.FLOOD_FETCH_DIRECTORY_LIST_SUCCESS,
-            data: {
-              ...options,
-              ...response,
-            },
-          });
-        },
-        (error = {}) => {
-          const {response: errorData} = error;
+      .then(response => {
+        return {
+          ...options,
+          ...response,
+        };
+      }),
 
-          AppDispatcher.dispatchServerAction({
-            type: ActionTypes.FLOOD_FETCH_DIRECTORY_LIST_ERROR,
-            error: errorData,
-          });
-        }
-      );
-  },
-
-  fetchMediainfo: options => {
-    return axios
+  fetchMediainfo: options =>
+    axios
       .get(`${baseURI}api/mediainfo`, {
         params: {
           hash: options.hash,
         },
       })
       .then((json = {}) => json.data)
-      .then(
-        response => {
-          AppDispatcher.dispatchServerAction({
-            type: ActionTypes.FLOOD_FETCH_MEDIAINFO_SUCCESS,
-            data: {
-              ...response,
-              ...options,
-            },
-          });
-        },
-        error => {
-          AppDispatcher.dispatchServerAction({
-            type: ActionTypes.FLOOD_FETCH_MEDIAINFO_ERROR,
-            error,
-          });
-        }
-      );
-  },
+      .then(response => {
+        AppDispatcher.dispatchServerAction({
+          type: ActionTypes.FLOOD_FETCH_MEDIAINFO_SUCCESS,
+          data: {
+            ...response,
+            ...options,
+          },
+        });
+      }),
 
-  fetchNotifications: options => {
-    return axios
+  fetchNotifications: options =>
+    axios
       .get(`${baseURI}api/notifications`, {
         params: {
           limit: options.limit,
@@ -182,9 +141,8 @@ const FloodActions = {
               error,
             },
           });
-        }
-      );
-  },
+        },
+      ),
 
   handleClientConnectivityStatusChange(event) {
     AppDispatcher.dispatchServerAction({
@@ -192,7 +150,12 @@ const FloodActions = {
       data: JSON.parse(event.data),
     });
   },
-
+  handleDiskUsageChange(event) {
+    AppDispatcher.dispatchServerAction({
+      type: ActionTypes.DISK_USAGE_CHANGE,
+      data: JSON.parse(event.data),
+    });
+  },
   handleNotificationCountChange(event) {
     AppDispatcher.dispatchServerAction({
       type: ActionTypes.NOTIFICATION_COUNT_CHANGE,
@@ -274,12 +237,14 @@ const FloodActions = {
 
       activityStreamEventSource.addEventListener(
         serverEventTypes.CLIENT_CONNECTIVITY_STATUS_CHANGE,
-        this.handleClientConnectivityStatusChange
+        this.handleClientConnectivityStatusChange,
       );
+
+      activityStreamEventSource.addEventListener(serverEventTypes.DISK_USAGE_CHANGE, this.handleDiskUsageChange);
 
       activityStreamEventSource.addEventListener(
         serverEventTypes.NOTIFICATION_COUNT_CHANGE,
-        this.handleNotificationCountChange
+        this.handleNotificationCountChange,
       );
 
       activityStreamEventSource.addEventListener(serverEventTypes.TAXONOMY_DIFF_CHANGE, this.handleTaxonomyDiffChange);
@@ -288,30 +253,49 @@ const FloodActions = {
 
       activityStreamEventSource.addEventListener(
         serverEventTypes.TORRENT_LIST_DIFF_CHANGE,
-        this.handleTorrentListDiffChange
+        this.handleTorrentListDiffChange,
       );
 
       activityStreamEventSource.addEventListener(
         serverEventTypes.TORRENT_LIST_FULL_UPDATE,
-        this.handleTorrentListFullUpdate
+        this.handleTorrentListFullUpdate,
       );
 
       activityStreamEventSource.addEventListener(
         serverEventTypes.TRANSFER_SUMMARY_DIFF_CHANGE,
-        this.handleTransferSummaryDiffChange
+        this.handleTransferSummaryDiffChange,
       );
 
       activityStreamEventSource.addEventListener(
         serverEventTypes.TRANSFER_SUMMARY_FULL_UPDATE,
-        this.handleTransferSummaryFullUpdate
+        this.handleTransferSummaryFullUpdate,
       );
 
       activityStreamEventSource.addEventListener(
         serverEventTypes.TRANSFER_HISTORY_FULL_UPDATE,
-        this.handleTransferHistoryFullUpdate
+        this.handleTransferHistoryFullUpdate,
       );
     }
   },
 };
+
+const handleProlongedInactivity = () => {
+  FloodActions.closeActivityStream();
+};
+
+const handleWindowVisibilityChange = () => {
+  if (global.document.hidden) {
+    // After 30 seconds of inactivity, we stop the event stream.
+    visibilityChangeTimeout = global.setTimeout(handleProlongedInactivity, 1000 * 30);
+  } else {
+    global.clearTimeout(visibilityChangeTimeout);
+
+    if (activityStreamEventSource == null) {
+      FloodActions.startActivityStream(lastActivityStreamOptions);
+    }
+  }
+};
+
+global.document.addEventListener('visibilitychange', handleWindowVisibilityChange);
 
 export default FloodActions;

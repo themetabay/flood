@@ -40,6 +40,7 @@ export default {
   'button.add': 'Agregar',
   'button.cancel': 'Cancelar',
   'button.no': 'No',
+  'button.save.feed': 'Gaurdar',
   'button.save': 'Guardar Configuración',
   'button.state.adding': 'Agregando...',
   'button.yes': 'Sí',
@@ -52,7 +53,7 @@ export default {
   'feeds.existing.feeds': 'Fuentes Existentes',
   'feeds.existing.rules': 'Reglas Existentes',
   'feeds.label': 'Rotulo',
-  'feeds.match.count': `{count, plural, =1 {# Encontrado} other {# Encontrados}}`,
+  'feeds.match.count': '{count, plural, =1 {# Encontrado} other {# Encontrados}}',
   'feeds.match.pattern': 'Patrón de Inclusión',
   'feeds.match': 'Encontrado',
   'feeds.no.feeds.available': 'No hay fuentes disponibles',
@@ -103,6 +104,7 @@ export default {
   'locale.language.en': 'Inglés',
   'locale.language.es': 'Español',
   'locale.language.fr': 'Francés',
+  'locale.language.ko': 'Coreano',
   'locale.language.nl': 'Holandés',
 
   'mediainfo.execError':

@@ -7,16 +7,43 @@ import BaseStore from './BaseStore';
 import ConfigStore from './ConfigStore';
 import EventTypes from '../constants/EventTypes';
 import {filterTorrents} from '../util/filterTorrents';
-import FloodActions from '../actions/FloodActions';
 import {searchTorrents} from '../util/searchTorrents';
 import {selectTorrents} from '../util/selectTorrents';
 import SettingsStore from './SettingsStore';
 import {sortTorrents} from '../util/sortTorrents';
 import TorrentActions from '../actions/TorrentActions';
+// TODO: Fix this circular dependency
+// eslint-disable-next-line
 import TorrentFilterStore from './TorrentFilterStore';
 import UIStore from './UIStore';
 
 const pollInterval = ConfigStore.getPollInterval();
+
+// TODO: Handle these events in the respective stores
+const handleRemoveTorrentsSuccess = response => {
+  SettingsStore.saveFloodSettings({
+    id: 'deleteTorrentData',
+    data: response.deleteData,
+  });
+
+  AlertStore.add({
+    accumulation: {
+      id: 'alert.torrent.remove',
+      value: response.count,
+    },
+    id: 'alert.torrent.remove',
+  });
+};
+
+const handleRemoveTorrentsError = error => {
+  AlertStore.add({
+    accumulation: {
+      id: 'alert.torrent.remove.failed',
+      value: error.count,
+    },
+    id: 'alert.torrent.remove.failed',
+  });
+};
 
 class TorrentStoreClass extends BaseStore {
   constructor() {
@@ -28,10 +55,6 @@ class TorrentStoreClass extends BaseStore {
     this.selectedTorrents = [];
     this.sortedTorrents = [];
     this.torrents = {};
-  }
-
-  fetchMediainfo(hash) {
-    FloodActions.fetchMediainfo({hash});
   }
 
   fetchTorrentDetails(options = {}) {
@@ -46,10 +69,10 @@ class TorrentStoreClass extends BaseStore {
   }
 
   filterTorrents() {
-    let searchFilter = TorrentFilterStore.getSearchFilter();
-    let statusFilter = TorrentFilterStore.getStatusFilter();
-    let tagFilter = TorrentFilterStore.getTagFilter();
-    let trackerFilter = TorrentFilterStore.getTrackerFilter();
+    const searchFilter = TorrentFilterStore.getSearchFilter();
+    const statusFilter = TorrentFilterStore.getStatusFilter();
+    const tagFilter = TorrentFilterStore.getTagFilter();
+    const trackerFilter = TorrentFilterStore.getTrackerFilter();
 
     let filteredTorrents = Object.assign([], this.sortedTorrents);
 
@@ -90,21 +113,15 @@ class TorrentStoreClass extends BaseStore {
   }
 
   getSelectedTorrentsDownloadLocations() {
-    return this.selectedTorrents.map(hash => {
-      return this.torrents[hash].basePath;
-    });
+    return this.selectedTorrents.map(hash => this.torrents[hash].basePath);
   }
 
   getSelectedTorrentsFilename() {
-    return this.selectedTorrents.map(hash => {
-      return this.torrents[hash].baseFilename;
-    });
+    return this.selectedTorrents.map(hash => this.torrents[hash].baseFilename);
   }
 
   getSelectedTorrentsTags() {
-    return this.selectedTorrents.map(hash => {
-      return this.torrents[hash].tags;
-    });
+    return this.selectedTorrents.map(hash => this.torrents[hash].tags);
   }
 
   handleAddTorrentError() {
@@ -126,10 +143,6 @@ class TorrentStoreClass extends BaseStore {
       },
       id: 'alert.torrent.add',
     });
-  }
-
-  handleFetchMediainfoError(error) {
-    this.emit(EventTypes.FLOOD_FETCH_MEDIAINFO_ERROR, error);
   }
 
   handleFetchMediainfoSuccess(response) {
@@ -192,31 +205,6 @@ class TorrentStoreClass extends BaseStore {
     this.emit(EventTypes.UI_TORRENT_SELECTION_CHANGE);
   }
 
-  handleRemoveTorrentsSuccess(response) {
-    SettingsStore.saveFloodSettings({
-      id: 'deleteTorrentData',
-      data: response.deleteData,
-    });
-
-    AlertStore.add({
-      accumulation: {
-        id: 'alert.torrent.remove',
-        value: response.count,
-      },
-      id: 'alert.torrent.remove',
-    });
-  }
-
-  handleRemoveTorrentsError(error) {
-    AlertStore.add({
-      accumulation: {
-        id: 'alert.torrent.remove.failed',
-        value: error.count,
-      },
-      id: 'alert.torrent.remove.failed',
-    });
-  }
-
   handleSetFilePrioritySuccess() {
     this.emit(EventTypes.CLIENT_SET_FILE_PRIORITY_SUCCESS);
     this.fetchTorrentDetails({forceUpdate: true});
@@ -262,10 +250,6 @@ class TorrentStoreClass extends BaseStore {
     this.emit(EventTypes.CLIENT_TORRENTS_REQUEST_SUCCESS);
   }
 
-  setFilePriority(hash, fileIndices, priority) {
-    TorrentActions.setFilePriority(hash, fileIndices, priority);
-  }
-
   setTorrentDetails(hash, torrentDetails) {
     this.torrents[hash].details = torrentDetails;
     this.resolveRequest('fetch-torrent-details');
@@ -273,7 +257,7 @@ class TorrentStoreClass extends BaseStore {
   }
 
   sortTorrents() {
-    let sortBy = TorrentFilterStore.getTorrentsSort();
+    const sortBy = TorrentFilterStore.getTorrentsSort();
 
     // Convert torrents hash to array and sort it.
     this.sortedTorrents = sortTorrents(this.torrents, sortBy);
@@ -327,19 +311,16 @@ TorrentStore.dispatcherID = AppDispatcher.register(payload => {
       TorrentStore.handleMoveTorrentsError(action.error);
       break;
     case ActionTypes.CLIENT_REMOVE_TORRENT_SUCCESS:
-      TorrentStore.handleRemoveTorrentsSuccess(action.data);
+      handleRemoveTorrentsSuccess(action.data);
       break;
     case ActionTypes.CLIENT_REMOVE_TORRENT_ERROR:
-      TorrentStore.handleRemoveTorrentsError(action.error);
+      handleRemoveTorrentsError(action.error);
       break;
     case ActionTypes.CLIENT_SET_FILE_PRIORITY_SUCCESS:
       TorrentStore.handleSetFilePrioritySuccess(action.data);
       break;
     case ActionTypes.FLOOD_FETCH_MEDIAINFO_SUCCESS:
       TorrentStore.handleFetchMediainfoSuccess(action.data);
-      break;
-    case ActionTypes.FLOOD_FETCH_MEDIAINFO_ERROR:
-      TorrentStore.handleFetchMediainfoError(action.error);
       break;
     case ActionTypes.UI_CLICK_TORRENT:
       TorrentStore.setSelectedTorrents(action.data.event, action.data.hash);

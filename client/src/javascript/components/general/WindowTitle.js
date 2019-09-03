@@ -2,37 +2,18 @@ import {injectIntl} from 'react-intl';
 import DocumentTitle from 'react-document-title';
 import React from 'react';
 
+import connectStores from '../../util/connectStores';
 import {compute, getTranslationString} from '../../util/size';
 import EventTypes from '../../constants/EventTypes';
 import TransferDataStore from '../../stores/TransferDataStore';
 
-const METHODS_TO_BIND = ['handleTransferChange'];
-
 class WindowTitle extends React.Component {
-  constructor() {
-    super();
+  renderTitle() {
+    const {intl, summary} = this.props;
 
-    this.state = {
-      title: 'Flood',
-    };
-
-    METHODS_TO_BIND.forEach(method => {
-      this[method] = this[method].bind(this);
-    });
-  }
-
-  componentDidMount() {
-    TransferDataStore.listen(EventTypes.CLIENT_TRANSFER_SUMMARY_CHANGE, this.handleTransferChange);
-  }
-
-  componentWillUnmount() {
-    TransferDataStore.unlisten(EventTypes.CLIENT_TRANSFER_SUMMARY_CHANGE, this.handleTransferChange);
-  }
-
-  handleTransferChange() {
-    const {intl} = this.props;
-
-    const summary = TransferDataStore.getTransferSummary();
+    if (Object.keys(summary).length === 0) {
+      return 'Flood';
+    }
 
     const down = compute(summary.downRate);
     const up = compute(summary.upRate);
@@ -47,7 +28,7 @@ class WindowTitle extends React.Component {
       },
       {
         baseUnit: intl.formatMessage({id: getTranslationString(down.unit)}),
-      }
+      },
     );
     const translatedUpUnit = intl.formatMessage(
       {
@@ -56,10 +37,10 @@ class WindowTitle extends React.Component {
       },
       {
         baseUnit: intl.formatMessage({id: getTranslationString(up.unit)}),
-      }
+      },
     );
 
-    const formattedTitle = intl.formatMessage(
+    return intl.formatMessage(
       {
         id: 'window.title',
         // \u2193 and \u2191 are down and up arrows, respectively
@@ -68,20 +49,28 @@ class WindowTitle extends React.Component {
       {
         down: `${formattedDownSpeed} ${translatedDownUnit}`,
         up: `${formattedUpSpeed} ${translatedUpUnit}`,
-      }
+      },
     );
-
-    this.setState({
-      title: formattedTitle,
-    });
   }
 
   render() {
     const {children} = this.props;
-    const {title} = this.state;
-
-    return <DocumentTitle title={title}>{children}</DocumentTitle>;
+    return <DocumentTitle title={this.renderTitle()}>{children}</DocumentTitle>;
   }
 }
 
-export default injectIntl(WindowTitle);
+const ConnectedWindowTitle = connectStores(injectIntl(WindowTitle), () => {
+  return [
+    {
+      store: TransferDataStore,
+      event: EventTypes.CLIENT_TRANSFER_SUMMARY_CHANGE,
+      getValue: ({store}) => {
+        return {
+          summary: store.getTransferSummary(),
+        };
+      },
+    },
+  ];
+});
+
+export default ConnectedWindowTitle;
